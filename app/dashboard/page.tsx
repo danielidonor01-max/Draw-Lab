@@ -200,7 +200,7 @@ export default function DashboardPage() {
                     {match.league}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {new Date(match.kickoffTime).toLocaleDateString()} {new Date(match.kickoffTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    <span suppressHydrationWarning>{new Date(match.kickoffTime).toLocaleDateString()} {new Date(match.kickoffTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500 dark:text-gray-400 font-mono">
                     {match.prediction ? `${(match.prediction.drawProbability * 100).toFixed(1)}%` : 'N/A'}

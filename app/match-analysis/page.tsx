@@ -68,7 +68,7 @@ function MatchAnalysisContent() {
         <div className="flex items-center text-sm text-gray-500 mb-2">
           <span>{matchData.league}</span>
           <span className="mx-2">•</span>
-          <span>{new Date(matchData.kickoff).toLocaleString()}</span>
+          <span suppressHydrationWarning>{new Date(matchData.kickoff).toLocaleString()}</span>
         </div>
         <h1 className="text-3xl font-black text-gray-900 dark:text-white">
           {matchData.homeTeam} vs {matchData.awayTeam}
@@ -183,7 +183,7 @@ function MatchAnalysisContent() {
                {matchData.headToHead.map((h2h, idx) => (
                  <div key={`h2h-${idx}`} className="flex justify-between items-center text-sm p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
                    <span className="font-semibold">{h2h.homeTeamScore} - {h2h.awayTeamScore}</span>
-                   <span className="text-xs text-gray-500">{new Date(h2h.date).toLocaleDateString()}</span>
+                   <span className="text-xs text-gray-500" suppressHydrationWarning>{new Date(h2h.date).toLocaleDateString()}</span>
                  </div>
                ))}
             </div>

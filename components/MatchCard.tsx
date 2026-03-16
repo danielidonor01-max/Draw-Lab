@@ -13,7 +13,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({ match }) => {
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-shadow">
       <div className="flex justify-between items-center mb-4">
         <span className="text-xs font-semibold tracking-wider text-gray-500 uppercase">{match.league}</span>
-        <span className="text-xs text-gray-400">{new Date(match.kickoffTime).toLocaleString()}</span>
+        <span className="text-xs text-gray-400" suppressHydrationWarning>{new Date(match.kickoffTime).toLocaleString()}</span>
       </div>
       <div className="flex items-center justify-between">
         <div className="flex flex-col items-center flex-1">
