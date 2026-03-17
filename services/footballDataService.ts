@@ -1,5 +1,6 @@
 import { DetailedMatch, Match, TeamStats, RecentForm, HeadToHeadMatch, LeagueAverages } from '../types/match';
 import { OddsService } from './oddsService';
+import { ApiFootballFixtureResponse, ApiFootballTeamStatsResponse } from '../types/api-football';
 
 const API_TIMEOUT = 5000;
 const CACHE_TTL = 300000; // 5 mins
@@ -26,19 +27,38 @@ export const SUPPORTED_LEAGUES = [
 ];
 
 /**
+ * API-Football connection details
+ */
+const getApiHeaders = () => {
+  const key = process.env.API_FOOTBALL_KEY;
+  if (!key) return null;
+  return {
+    'x-apisports-key': key
+  };
+};
+
+const getBaseUrl = () => {
+  return process.env.NEXT_PUBLIC_API_FOOTBALL_BASE_URL || 'https://v3.football.api-sports.io';
+};
+
+/**
  * Intelligent fetch wrapper with timeout and caching.
  */
-async function fetchWithCache(url: string, key: string): Promise<any> {
+async function fetchWithCache(endpoint: string, key: string): Promise<any> {
   const now = Date.now();
   if (cache[key] && (now - cache[key].timestamp < CACHE_TTL)) {
     return cache[key].data;
   }
 
-  // Attempt real fetch, fall back to throw error and catch below
+  const headers = getApiHeaders();
+  if (!headers) throw new Error("API key missing. Falling back to mock data.");
+
+  const url = `${getBaseUrl()}${endpoint}`;
+
   try {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), API_TIMEOUT);
-    const response = await fetch(url, { signal: controller.signal });
+    const response = await fetch(url, { headers, signal: controller.signal });
     clearTimeout(id);
 
     if (!response.ok) {
@@ -46,12 +66,36 @@ async function fetchWithCache(url: string, key: string): Promise<any> {
     }
 
     const data = await response.json();
+    
+    // API-Football specific error structure
+    if (data.errors && Object.keys(data.errors).length > 0) {
+      throw new Error(`API-Football Error: ${JSON.stringify(data.errors)}`);
+    }
+
     cache[key] = { data, timestamp: now };
     return data;
   } catch (error) {
     console.warn(`Fetch failed for ${url}, fallback triggered.`);
     throw error;
   }
+}
+
+// ============================
+// DATA MAPPERS (API -> Internal)
+// ============================
+
+function mapApiTeamStats(statsData: ApiFootballTeamStatsResponse): TeamStats {
+  const played = statsData.fixtures?.played?.total || 1;
+  return {
+    averageGoalsScoredPerMatch: parseFloat(statsData.goals?.for?.average?.total || '0'),
+    averageGoalsConcededPerMatch: parseFloat(statsData.goals?.against?.average?.total || '0'),
+    homeGoalsScored: statsData.goals?.for?.total?.home || 0,
+    awayGoalsScored: statsData.goals?.for?.total?.away || 0,
+    homeGoalsConceded: statsData.goals?.against?.total?.home || 0,
+    awayGoalsConceded: statsData.goals?.against?.total?.away || 0,
+    totalMatchesPlayed: played,
+    numberOfDraws: statsData.fixtures?.draws?.total || 0,
+  };
 }
 
 // ============================
@@ -139,27 +183,70 @@ export const FootballDataService = {
   
   async getUpcomingMatches(): Promise<DetailedMatch[]> {
     try {
-      // In a real application, replace with actual API URL
-      return await fetchWithCache('https://api.football-data.invalid/upcoming', 'upcoming_matches');
-    } catch {
-      // Fallback
+      // Get today's fixtures for a specific major league (e.g. English Premier League ID: 39, 2023 season)
+      const dateStr = new Date().toISOString().split('T')[0];
+      const selectedLeague = 39; // EPL
+      const currentSeason = 2023; // Or hardcode dynamic year 
+
+      const data = await fetchWithCache(`/fixtures?date=${dateStr}&league=${selectedLeague}&season=${currentSeason}`, `upcoming_${dateStr}`);
+      
+      const apiFixtures: ApiFootballFixtureResponse[] = data.response || [];
+      const matches: DetailedMatch[] = [];
+
+      // Loop top 5 fixtures to avoid hammering the API strictly during demo modes
+      for (const apiMatch of apiFixtures.slice(0, 5)) {
+        // Fetch detailed stats for home & away teams sequentially
+        const homeStatsRes = await fetchWithCache(`/teams/statistics?team=${apiMatch.teams.home.id}&league=${apiMatch.league.id}&season=${apiMatch.league.season}`, `stats_${apiMatch.teams.home.id}`);
+        const awayStatsRes = await fetchWithCache(`/teams/statistics?team=${apiMatch.teams.away.id}&league=${apiMatch.league.id}&season=${apiMatch.league.season}`, `stats_${apiMatch.teams.away.id}`);
+
+        const match: DetailedMatch = {
+          id: apiMatch.fixture.id.toString(),
+          league: apiMatch.league.name,
+          season: apiMatch.league.season.toString(),
+          homeTeam: apiMatch.teams.home.name,
+          awayTeam: apiMatch.teams.away.name,
+          kickoff: apiMatch.fixture.date,
+          homeTeamStats: mapApiTeamStats(homeStatsRes.response),
+          awayTeamStats: mapApiTeamStats(awayStatsRes.response),
+          
+          // NOTE: Form, H2H, and League Averages require 3+ additional deep separate API queries each. 
+          // Injecting fallbacks here so we respect strict API rate limits (10/min) on free tiers while still functioning.
+          homeForm: generateMockForm(),
+          awayForm: generateMockForm(),
+          headToHead: generateMockH2H(),
+          leagueAverages: generateMockLeagueAverages()
+        };
+
+        // Attempt fetching Live Pre-Match Odds
+        match.odds = await OddsService.fetchOddsForMatch({ id: match.id } as Match);
+        matches.push(match);
+      }
+
+      // If no matches today, fallback to mock to keep the UI active
+      if (matches.length === 0) throw new Error("No live matches today");
+      
+      return matches;
+    } catch (err) {
+      console.warn("Live API integration failed or empty. Sideloading strictly isolated mock matches.");
       return generateMockMatches();
     }
   },
 
   async getMatchDetails(matchId: string): Promise<DetailedMatch | null> {
     try {
-      return await fetchWithCache(`https://api.football-data.invalid/match/${matchId}`, `match_${matchId}`);
+       // A single fetch for fixture details
+       // We skip full implementation relying on the list for now
+       throw new Error("Detailed match fallback triggered.");
     } catch {
-      // Return a generated mock for this specific match using the mock list
       const matches = await generateMockMatches();
-      return { ...matches[0], id: matchId }; // Just returning first item as mock 
+      return { ...matches[0], id: matchId }; 
     }
   },
 
   async getTeamStats(teamId: string): Promise<TeamStats> {
     try {
-      return await fetchWithCache(`https://api.football-data.invalid/stats/${teamId}`, `stats_${teamId}`);
+      const resp = await fetchWithCache(`/teams/statistics?team=${teamId}&league=39&season=2023`, `stats_${teamId}`);
+      return mapApiTeamStats(resp.response);
     } catch {
       return generateMockTeamStats();
     }
@@ -167,10 +254,9 @@ export const FootballDataService = {
 
   async getHeadToHead(team1Id: string, team2Id: string): Promise<HeadToHeadMatch[]> {
      try {
-      return await fetchWithCache(`https://api.football-data.invalid/h2h/${team1Id}/${team2Id}`, `h2h_${team1Id}_${team2Id}`);
+       throw new Error("H2H Endpoint triggered mock.");
      } catch {
        return generateMockH2H();
      }
   }
-
 };
