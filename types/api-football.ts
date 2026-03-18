@@ -28,9 +28,14 @@ export interface ApiFootballFixtureResponse {
       logo: string;
     };
   };
+  goals?: {
+    home: number;
+    away: number;
+  };
 }
 
 export interface ApiFootballTeamStatsResponse {
+  form?: string;
   fixtures: {
     played: { home: number; away: number; total: number };
     wins: { home: number; away: number; total: number };

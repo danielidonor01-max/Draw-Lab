@@ -5,10 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import { ProbabilityBar } from '../../components/ProbabilityBar';
 import { ScoreMatrix } from '../../components/ScoreMatrix';
 import { IndicatorPanel } from '../../components/IndicatorPanel';
-import { DetailedMatch } from '../../types/match';
+import { DetailedMatch, Match } from '../../types/match';
 import { Prediction } from '../../types/prediction';
 
-type AnalysisData = DetailedMatch & { prediction?: Prediction };
+type AnalysisData = DetailedMatch & Match & { prediction?: Prediction };
 
 function MatchAnalysisContent() {
   const searchParams = useSearchParams();
@@ -68,10 +68,10 @@ function MatchAnalysisContent() {
         <div className="flex items-center text-sm text-gray-500 mb-2">
           <span>{matchData.league}</span>
           <span className="mx-2">•</span>
-          <span suppressHydrationWarning>{new Date(matchData.kickoff).toLocaleString()}</span>
+          <span suppressHydrationWarning>{matchData.kickoffTime ? new Date(matchData.kickoffTime).toLocaleString() : ''}</span>
         </div>
         <h1 className="text-3xl font-black text-gray-900 dark:text-white">
-          {matchData.homeTeam} vs {matchData.awayTeam}
+          {matchData.homeTeamId} vs {matchData.awayTeamId}
         </h1>
       </div>
 

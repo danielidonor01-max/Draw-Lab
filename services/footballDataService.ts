@@ -10,20 +10,22 @@ const cache: Record<string, { data: any, timestamp: number }> = {};
 
 /**
  * Supported leagues for the application.
+ * Mapped to approximate baseline goals per match to save expensive `/leagues` API lookups.
  */
+const LEAGUE_BASELINES: Record<number, LeagueAverages> = {
+  39: { averageGoalsPerMatch: 2.85, averageHomeGoals: 1.55, averageAwayGoals: 1.30 }, // EPL
+  140: { averageGoalsPerMatch: 2.50, averageHomeGoals: 1.40, averageAwayGoals: 1.10 }, // La Liga
+  135: { averageGoalsPerMatch: 2.60, averageHomeGoals: 1.45, averageAwayGoals: 1.15 }, // Serie A
+  78: { averageGoalsPerMatch: 3.10, averageHomeGoals: 1.70, averageAwayGoals: 1.40 }, // Bundesliga
+  61: { averageGoalsPerMatch: 2.70, averageHomeGoals: 1.50, averageAwayGoals: 1.20 }, // Ligue 1
+};
+
 export const SUPPORTED_LEAGUES = [
   'English Premier League',
   'Spanish La Liga',
   'Italian Serie A',
   'German Bundesliga',
-  'French Ligue 1',
-  'Portuguese Primeira Liga',
-  'Dutch Eredivisie',
-  'Belgian Pro League',
-  'Turkish Super Lig',
-  'English Championship',
-  'Spanish Segunda Division',
-  'Italian Serie B'
+  'French Ligue 1'
 ];
 
 /**
@@ -51,7 +53,9 @@ async function fetchWithCache(endpoint: string, key: string): Promise<any> {
   }
 
   const headers = getApiHeaders();
-  if (!headers) throw new Error("API key missing. Falling back to mock data.");
+  if (!headers) {
+    throw new Error("CRITICAL ERROR: API key missing. Live data fetch blocked.");
+  }
 
   const url = `${getBaseUrl()}${endpoint}`;
 
@@ -75,7 +79,7 @@ async function fetchWithCache(endpoint: string, key: string): Promise<any> {
     cache[key] = { data, timestamp: now };
     return data;
   } catch (error) {
-    console.warn(`Fetch failed for ${url}, fallback triggered.`);
+    console.error(`Fetch failed for ${url}:`, error);
     throw error;
   }
 }
@@ -98,82 +102,34 @@ function mapApiTeamStats(statsData: ApiFootballTeamStatsResponse): TeamStats {
   };
 }
 
-// ============================
-// MOCK FALLBACK GENERATORS
-// ============================
-
-function generateMockTeamStats(): TeamStats {
-  return {
-    averageGoalsScoredPerMatch: +(Math.random() * 2 + 0.5).toFixed(2),
-    averageGoalsConcededPerMatch: +(Math.random() * 2 + 0.5).toFixed(2),
-    homeGoalsScored: Math.floor(Math.random() * 30 + 10),
-    awayGoalsScored: Math.floor(Math.random() * 25 + 5),
-    homeGoalsConceded: Math.floor(Math.random() * 20 + 5),
-    awayGoalsConceded: Math.floor(Math.random() * 25 + 10),
-    totalMatchesPlayed: 25,
-    numberOfDraws: Math.floor(Math.random() * 10 + 2),
-  };
-}
-
-function generateMockForm(): RecentForm {
-  const results: ('W' | 'D' | 'L')[] = ['W', 'D', 'L'];
-  const last5Matches = Array.from({ length: 5 }, () => ({
-    result: results[Math.floor(Math.random() * results.length)],
-    goalsScored: Math.floor(Math.random() * 4),
-    goalsConceded: Math.floor(Math.random() * 4)
+function mapRecentForm(formString?: string): RecentForm {
+  if (!formString) return { last5Matches: [] };
+  
+  // API returns strings like 'WDLLW'
+  const characters = formString.split('').reverse().slice(0, 5);
+  
+  const matches = characters.map(char => ({
+    result: (char === 'W' || char === 'D' || char === 'L') ? char : 'D',
+    goalsScored: 0, // Not provided strictly in the form string abstraction
+    goalsConceded: 0 
   }));
-  return { last5Matches };
+  
+  return { last5Matches: matches as { result: 'W'|'D'|'L', goalsScored: number, goalsConceded: number }[] };
 }
 
-function generateMockH2H(): HeadToHeadMatch[] {
-  return Array.from({ length: 5 }, (_, i) => ({
-    homeTeamScore: Math.floor(Math.random() * 4),
-    awayTeamScore: Math.floor(Math.random() * 4),
-    competition: 'League',
-    date: new Date(Date.now() - (i + 1) * 30 * 24 * 60 * 60 * 1000).toISOString()
+function mapApiH2H(fixtures: ApiFootballFixtureResponse[]): HeadToHeadMatch[] {
+  return fixtures.map(f => ({
+    homeTeamScore: f.goals?.home ?? 0,
+    awayTeamScore: f.goals?.away ?? 0,
+    competition: f.league.name,
+    date: f.fixture.date,
   }));
 }
 
-function generateMockLeagueAverages(): LeagueAverages {
-  return {
-    averageGoalsPerMatch: 2.65,
-    averageHomeGoals: 1.45,
-    averageAwayGoals: 1.20
-  };
+function getLeagueAveragesFallback(leagueId: number): LeagueAverages {
+  return LEAGUE_BASELINES[leagueId] || { averageGoalsPerMatch: 2.65, averageHomeGoals: 1.45, averageAwayGoals: 1.20 };
 }
 
-async function generateMockMatches(): Promise<DetailedMatch[]> {
-  const teams = ['Arsenal', 'Chelsea', 'Liverpool', 'Man City', 'Real Madrid', 'Barcelona', 'Bayern Munich', 'Dortmund', 'Juventus', 'AC Milan', 'PSG', 'Marseille'];
-  
-  const matches: DetailedMatch[] = [];
-  
-  for (let i = 0; i < 8; i++) {
-    const homeTeam = teams[Math.floor(Math.random() * teams.length)];
-    let awayTeam = teams[Math.floor(Math.random() * teams.length)];
-    while (awayTeam === homeTeam) awayTeam = teams[Math.floor(Math.random() * teams.length)];
-    
-    const m: DetailedMatch = {
-      id: `match_${i + 1}`,
-      league: SUPPORTED_LEAGUES[Math.floor(Math.random() * 5)], // Pick from top 5 for demo
-      season: '2023/2024',
-      homeTeam,
-      awayTeam,
-      kickoff: new Date(Date.now() + (i + 1) * 24 * 60 * 60 * 1000).toISOString(),
-      homeTeamStats: generateMockTeamStats(),
-      awayTeamStats: generateMockTeamStats(),
-      homeForm: generateMockForm(),
-      awayForm: generateMockForm(),
-      headToHead: generateMockH2H(),
-      leagueAverages: generateMockLeagueAverages()
-    };
-
-    // Cast as Match so OddsService can accept it, though we only really need the ID inside dummy fetchOddsForMatch 
-    m.odds = await OddsService.fetchOddsForMatch(m as unknown as Match);
-    matches.push(m);
-  }
-
-  return matches;
-}
 
 // ============================
 // SERVICE EXPORTS
@@ -183,21 +139,23 @@ export const FootballDataService = {
   
   async getUpcomingMatches(): Promise<DetailedMatch[]> {
     try {
-      // Get today's fixtures for a specific major league (e.g. English Premier League ID: 39, 2023 season)
       const dateStr = new Date().toISOString().split('T')[0];
-      const selectedLeague = 39; // EPL
-      const currentSeason = 2023; // Or hardcode dynamic year 
+      const selectedLeague = 39; // Premier League priority demo
+      const currentSeason = new Date().getFullYear() - 1; // Or hardcode dynamic year 
 
       const data = await fetchWithCache(`/fixtures?date=${dateStr}&league=${selectedLeague}&season=${currentSeason}`, `upcoming_${dateStr}`);
       
       const apiFixtures: ApiFootballFixtureResponse[] = data.response || [];
       const matches: DetailedMatch[] = [];
 
-      // Loop top 5 fixtures to avoid hammering the API strictly during demo modes
+      // Process up to 5 fixtures to respect API limits locally
       for (const apiMatch of apiFixtures.slice(0, 5)) {
-        // Fetch detailed stats for home & away teams sequentially
+        // Fetch detailed stats for home & away teams
         const homeStatsRes = await fetchWithCache(`/teams/statistics?team=${apiMatch.teams.home.id}&league=${apiMatch.league.id}&season=${apiMatch.league.season}`, `stats_${apiMatch.teams.home.id}`);
         const awayStatsRes = await fetchWithCache(`/teams/statistics?team=${apiMatch.teams.away.id}&league=${apiMatch.league.id}&season=${apiMatch.league.season}`, `stats_${apiMatch.teams.away.id}`);
+
+        // Fetch H2H directly
+        const h2hRes = await fetchWithCache(`/fixtures/headtohead?h2h=${apiMatch.teams.home.id}-${apiMatch.teams.away.id}&last=5`, `h2h_${apiMatch.teams.home.id}_${apiMatch.teams.away.id}`);
 
         const match: DetailedMatch = {
           id: apiMatch.fixture.id.toString(),
@@ -206,57 +164,42 @@ export const FootballDataService = {
           homeTeam: apiMatch.teams.home.name,
           awayTeam: apiMatch.teams.away.name,
           kickoff: apiMatch.fixture.date,
+          
           homeTeamStats: mapApiTeamStats(homeStatsRes.response),
           awayTeamStats: mapApiTeamStats(awayStatsRes.response),
           
-          // NOTE: Form, H2H, and League Averages require 3+ additional deep separate API queries each. 
-          // Injecting fallbacks here so we respect strict API rate limits (10/min) on free tiers while still functioning.
-          homeForm: generateMockForm(),
-          awayForm: generateMockForm(),
-          headToHead: generateMockH2H(),
-          leagueAverages: generateMockLeagueAverages()
+          homeForm: mapRecentForm(homeStatsRes.response?.form),
+          awayForm: mapRecentForm(awayStatsRes.response?.form),
+          
+          headToHead: mapApiH2H(h2hRes.response || []),
+          leagueAverages: getLeagueAveragesFallback(apiMatch.league.id)
         };
 
-        // Attempt fetching Live Pre-Match Odds
-        match.odds = await OddsService.fetchOddsForMatch({ id: match.id } as Match);
+        // Complete Live Integrity
+        const liveOdds = await OddsService.fetchOddsForMatch({ id: match.id } as Match);
+        match.odds = liveOdds || undefined;
         matches.push(match);
       }
-
-      // If no matches today, fallback to mock to keep the UI active
-      if (matches.length === 0) throw new Error("No live matches today");
       
       return matches;
     } catch (err) {
-      console.warn("Live API integration failed or empty. Sideloading strictly isolated mock matches.");
-      return generateMockMatches();
+      console.error("CRITICAL DATA FLOW ERROR: Live API integration explicitly failed.", err);
+      // Graceful fallback: return empty active queue rather than bringing down Next.js routing or inserting Dummy data.
+      return []; 
     }
   },
 
   async getMatchDetails(matchId: string): Promise<DetailedMatch | null> {
-    try {
-       // A single fetch for fixture details
-       // We skip full implementation relying on the list for now
-       throw new Error("Detailed match fallback triggered.");
-    } catch {
-      const matches = await generateMockMatches();
-      return { ...matches[0], id: matchId }; 
-    }
+    throw new Error("Fallback execution blocked. Real ID match lookup required.");
   },
 
   async getTeamStats(teamId: string): Promise<TeamStats> {
-    try {
-      const resp = await fetchWithCache(`/teams/statistics?team=${teamId}&league=39&season=2023`, `stats_${teamId}`);
-      return mapApiTeamStats(resp.response);
-    } catch {
-      return generateMockTeamStats();
-    }
+    const resp = await fetchWithCache(`/teams/statistics?team=${teamId}&league=39&season=2023`, `stats_${teamId}`);
+    return mapApiTeamStats(resp.response);
   },
 
   async getHeadToHead(team1Id: string, team2Id: string): Promise<HeadToHeadMatch[]> {
-     try {
-       throw new Error("H2H Endpoint triggered mock.");
-     } catch {
-       return generateMockH2H();
-     }
+    const h2hRes = await fetchWithCache(`/fixtures/headtohead?h2h=${team1Id}-${team2Id}&last=5`, `h2h_${team1Id}_${team2Id}`);
+    return mapApiH2H(h2hRes.response || []);
   }
 };

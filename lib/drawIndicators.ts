@@ -47,41 +47,46 @@ export function calculateDrawIndicators(
   maxPossibleScore += (10 * 3);
 
   // 3. Draw Frequency (Weight: 2)
-  // Assuming total matches played is roughly goals / avg per match
-  // Fallback to mock data since we don't have perfect absolute numbers in TeamStats mock
-  const homeDrawRate = 0.26; // Simulated 26%
-  const awayDrawRate = 0.28; // Simulated 28%
+  // Parse dynamic live statistics from API payload
+  const homeDrawRate = homeStats.totalMatchesPlayed > 0 ? (homeStats.numberOfDraws / homeStats.totalMatchesPlayed) : 0.25;
+  const awayDrawRate = awayStats.totalMatchesPlayed > 0 ? (awayStats.numberOfDraws / awayStats.totalMatchesPlayed) : 0.25;
   
   let drawFreqScore = 0;
-  if (homeDrawRate > 0.25 && awayDrawRate > 0.25) drawFreqScore = 9;
-  else if (homeDrawRate > 0.2 || awayDrawRate > 0.2) drawFreqScore = 5;
+  if (homeDrawRate > 0.28 && awayDrawRate > 0.28) drawFreqScore = 10;
+  else if (homeDrawRate > 0.25 && awayDrawRate > 0.25) drawFreqScore = 8;
+  else if (homeDrawRate > 0.22 || awayDrawRate > 0.22) drawFreqScore = 5;
 
   details.push({
     name: "Historical Draw Frequency",
-    description: "Both teams exhibit >25% seasonal draw rates",
+    description: `Home draw rate: ${(homeDrawRate*100).toFixed(1)}%, Away: ${(awayDrawRate*100).toFixed(1)}%`,
     score: drawFreqScore
   });
   totalScore += (drawFreqScore * 2);
   maxPossibleScore += (10 * 2);
 
   // 4. Form Similarity (Weight: 1)
-  // Abstracted for now relying on xG form
+  // Form similarity assumes closely matched teams based on xG difference
+  let formScore = 0;
+  if (xgDiff < 0.2) formScore = 8;
+  else if (xgDiff < 0.4) formScore = 5;
+
   details.push({
-    name: "Form Similarity",
-    description: "Recent 5 matches show parallel point accumulation",
-    score: 6
+    name: "Form Capability Similarity",
+    description: "Evaluated capability index based on expected goals margin",
+    score: formScore
   });
-  totalScore += (6 * 1);
+  totalScore += (formScore * 1);
   maxPossibleScore += (10 * 1);
 
   // 5. League Draw Rate (Weight: 1)
-  const leagueDrawAvg = 0.24; // Baseline standard
+  // Derive abstract draw rate from average goals vs standard baselines
+  const leagueDrawAvg = 0.24; // Baseline constant assumption for football
   let leagueScore = 5;
-  if (leagueDrawAvg > 0.26) leagueScore = 8;
+  if (leagueAverages.averageGoalsPerMatch < 2.5) leagueScore = 8; // Lower scoring leagues have more draws
   
   details.push({
     name: "League Draw Context",
-    description: `League draw average sits at ${(leagueDrawAvg * 100).toFixed(1)}%`,
+    description: `League average goals: ${(leagueAverages.averageGoalsPerMatch).toFixed(2)}`,
     score: leagueScore
   });
   totalScore += (leagueScore * 1);

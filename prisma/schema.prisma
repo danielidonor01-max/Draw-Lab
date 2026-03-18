@@ -1,0 +1,66 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Match {
+  id          String   @id
+  homeTeamId  String
+  awayTeamId  String
+  league      String
+  season      String?
+  kickoffTime DateTime
+  status      String   @default("SCHEDULED")
+  
+  homeScore   Int?
+  awayScore   Int?
+
+  homeTeamStats  Json
+  awayTeamStats  Json
+  homeForm       Json
+  awayForm       Json
+  headToHead     Json
+  leagueAverages Json
+  odds           Json?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  prediction  Prediction?
+}
+
+model Prediction {
+  id                      String   @id @default(cuid())
+  matchId                 String   @unique
+  match                   Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  
+  homeWinProbability      Float
+  awayWinProbability      Float
+  drawProbability         Float
+  adjustedDrawProbability Float?
+  
+  expectedGoalsHome       Float
+  expectedGoalsAway       Float
+  
+  scoreProbabilities      Json
+  indicators              Json
+  indicatorDetails        Json?
+  
+  confidenceScore         Float
+  opportunityScore        Float?
+  opportunityCategory     String?
+  
+  impliedProbability      Float?
+  expectedValue           Float?
+  valueRating             String?
+
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}

@@ -89,6 +89,7 @@ export function enrichMatchWithPrediction(match: DetailedMatch): Match & { predi
   const prediction = calculatePrediction(match);
   
   return {
+    ...match, // Keep the complex stat arrays and objects
     id: match.id,
     homeTeamId: match.homeTeam,
     awayTeamId: match.awayTeam,
@@ -99,5 +100,5 @@ export function enrichMatchWithPrediction(match: DetailedMatch): Match & { predi
     drawProbability: prediction.drawProbability,
     confidenceScore: prediction.confidenceScore,
     prediction
-  };
+  } as unknown as Match & { prediction?: Prediction };
 }
