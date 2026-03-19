@@ -105,6 +105,7 @@ export default function DashboardPage() {
             <h2 className="text-2xl font-black text-gray-900 dark:text-white flex items-center">
               <svg className="w-6 h-6 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
               Daily Draw Finder
+              <span className="ml-3 px-2 py-0.5 text-[10px] bg-blue-100 text-blue-700 rounded font-bold">v1.2.0-STABLE</span>
             </h2>
             <p className="text-sm text-gray-500 mt-1">Top {topOpportunities.length} highest-rated draw opportunities computed from global fixtures today.</p>
           </div>
