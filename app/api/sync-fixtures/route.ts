@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import { FootballDataService } from '../../../../services/footballDataService';
 import { enrichMatchWithPrediction } from '../../../../lib/probabilityEngine';
 import { prisma } from '../../../../lib/prisma';
