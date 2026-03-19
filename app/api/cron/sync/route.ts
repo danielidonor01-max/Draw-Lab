@@ -40,11 +40,12 @@ export async function GET(request: Request) {
         },
         create: {
           id: fullMatch.id,
-          homeTeamId: fullMatch.homeTeam,
-          awayTeamId: fullMatch.awayTeam,
+          // enrichMatchWithPrediction maps homeTeam->homeTeamId and kickoff->kickoffTime
+          homeTeamId: fullMatch.homeTeamId,
+          awayTeamId: fullMatch.awayTeamId,
           league: fullMatch.league,
           season: fullMatch.season || '2023',
-          kickoffTime: new Date(fullMatch.kickoff),
+          kickoffTime: new Date(fullMatch.kickoffTime),
           status: 'SCHEDULED',
           homeScore: null,
           awayScore: null,

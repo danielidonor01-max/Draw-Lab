@@ -8,10 +8,31 @@ import { Prediction } from '../../types/prediction';
 
 type EnrichedMatch = Match & { prediction?: Prediction };
 
+/** Returns a short day/date string and a time string from an ISO kickoff */
+function formatKickoff(isoString: string): { date: string; time: string } {
+  const d = new Date(isoString);
+  const date = d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+  const time = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  return { date, time };
+}
+
+/** Returns a human-readable "X mins ago" / "X hrs ago" string */
+function timeAgo(date: Date): string {
+  const diffMs = Date.now() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return 'just now';
+  if (diffMins < 60) return `${diffMins} min${diffMins === 1 ? '' : 's'} ago`;
+  const diffHrs = Math.floor(diffMins / 60);
+  if (diffHrs < 24) return `${diffHrs} hr${diffHrs === 1 ? '' : 's'} ago`;
+  return `${Math.floor(diffHrs / 24)}d ago`;
+}
+
 export default function DashboardPage() {
   const [matches, setMatches] = useState<EnrichedMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastSynced, setLastSynced] = useState<Date | null>(null);
+  const [now, setNow] = useState(new Date());
 
   useEffect(() => {
     async function fetchMatches() {
@@ -21,6 +42,7 @@ export default function DashboardPage() {
         
         if (result.success) {
           setMatches(result.data);
+          setLastSynced(new Date());
         } else {
           setError(result.error);
         }
@@ -33,6 +55,10 @@ export default function DashboardPage() {
     }
 
     fetchMatches();
+
+    // Tick every 30 s so the "X mins ago" label stays fresh
+    const ticker = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(ticker);
   }, []);
 
   if (loading) {
@@ -155,9 +181,17 @@ export default function DashboardPage() {
 
       {/* Primary Fixtures Schedule */}
       <section>
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">All Fixtures Database</h2>
-          <p className="mt-1 text-gray-500 dark:text-gray-400">Underlying global match directory backing the Finder models.</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">All Fixtures Database</h2>
+            <p className="mt-1 text-gray-500 dark:text-gray-400">Global match directory backing the Finder models.</p>
+          </div>
+          {lastSynced && (
+            <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full">
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse inline-block"></span>
+              Data loaded&nbsp;<span className="font-semibold text-gray-600 dark:text-gray-300" suppressHydrationWarning>{timeAgo(lastSynced)}</span>
+            </div>
+          )}
         </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
@@ -199,8 +233,9 @@ export default function DashboardPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     {match.league}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    <span suppressHydrationWarning>{new Date(match.kickoffTime).toLocaleDateString()} {new Date(match.kickoffTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                  <td className="px-6 py-4 whitespace-nowrap" suppressHydrationWarning>
+                    <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{formatKickoff(match.kickoffTime).date}</div>
+                    <div className="text-xs text-blue-500 font-semibold mt-0.5">{formatKickoff(match.kickoffTime).time}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500 dark:text-gray-400 font-mono">
                     {match.prediction ? `${(match.prediction.drawProbability * 100).toFixed(1)}%` : 'N/A'}
