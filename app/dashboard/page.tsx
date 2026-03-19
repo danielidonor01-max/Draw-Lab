@@ -117,10 +117,12 @@ export default function DashboardPage() {
                 <tr>
                   <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Opp Rank</th>
                   <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Match</th>
+                  <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Kickoff</th>
                   <th scope="col" className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Draw Odds</th>
                   <th scope="col" className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Model vs Implied</th>
                   <th scope="col" className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Expected Value</th>
                   <th scope="col" className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Opportunity Score</th>
+                  <th scope="col" className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -136,6 +138,10 @@ export default function DashboardPage() {
                         {match.homeTeamId} <span className="text-xs text-gray-400 font-normal mx-1">vs</span> {match.awayTeamId}
                       </div>
                       <div className="text-xs text-gray-500 mt-0.5">{match.league}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap" suppressHydrationWarning>
+                      <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{formatKickoff(match.kickoffTime).date}</div>
+                      <div className="text-xs text-blue-500 font-semibold mt-0.5">{formatKickoff(match.kickoffTime).time}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                        <div className="text-sm font-mono font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded inline-block">
@@ -170,6 +176,9 @@ export default function DashboardPage() {
                           {match.prediction?.opportunityCategory || 'Low'}
                         </div>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <Link href={`/match-analysis?id=${match.id}`} className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">Analyze</Link>
                     </td>
                   </tr>
                 ))}
