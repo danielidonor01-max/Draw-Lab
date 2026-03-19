@@ -1,4 +1,8 @@
-import { MatchOdds } from '../services/oddsService';
+export interface MatchOdds {
+  homeWin: number;
+  draw: number;
+  awayWin: number;
+}
 
 export interface TeamStats {
   averageGoalsScoredPerMatch: number;

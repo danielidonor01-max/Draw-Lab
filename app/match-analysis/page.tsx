@@ -28,17 +28,41 @@ function MatchAnalysisContent() {
 
     async function fetchData() {
       try {
-        // Use the dedicated single-match endpoint instead of fetching everything
-        const response = await fetch(`/api/matches/${matchId}`);
-        const result = await response.json();
+        setLoading(true);
+        setError(null);
+        
+        // Try dedicated single-match route first
+        let response = await fetch(`/api/matches/${matchId}`);
+        
+        // Fallback: If dedicated route 404s, try fetching all matches and filtering locally
+        if (response.status === 404) {
+          console.warn('Dedicated match route 404d, falling back to all-matches fetch...');
+          const allResponse = await fetch('/api/matches');
+          if (allResponse.ok) {
+            const allData = await allResponse.json();
+            const foundMatch = allData.data?.find((m: any) => m.id === matchId);
+            
+            if (foundMatch) {
+              setMatchData(foundMatch);
+              setLoading(false);
+              return;
+            }
+          }
+        }
 
-        if (result.success) {
-          setMatchData(result.data);
+        if (!response.ok) {
+          throw new Error('Failed to fetch match data');
+        }
+
+        const data = await response.json();
+        if (data.success && data.data) {
+          setMatchData(data.data);
         } else {
-          setError(result.error || 'Match not found.');
+          setError('Match not found');
         }
       } catch (err) {
-        setError('Failed to load match analysis data.');
+        console.error('Error fetching match:', err);
+        setError('Failed to load match analysis. Please try again later.');
       } finally {
         setLoading(false);
       }

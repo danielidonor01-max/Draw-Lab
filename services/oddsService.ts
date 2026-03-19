@@ -1,10 +1,4 @@
-import { Match } from '../types/match';
-
-export interface MatchOdds {
-  homeWin: number;
-  draw: number;
-  awayWin: number;
-}
+import { Match, MatchOdds } from '../types/match';
 
 export class OddsService {
   /**
