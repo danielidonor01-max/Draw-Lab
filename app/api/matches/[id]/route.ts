@@ -3,9 +3,9 @@ import { prisma } from '../../../../lib/prisma';
 
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await context.params;
 
   try {
     const dbMatch = await prisma.match.findUnique({
