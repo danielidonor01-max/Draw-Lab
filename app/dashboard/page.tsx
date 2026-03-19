@@ -127,62 +127,78 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {topOpportunities.map((match, index) => (
-                  <tr key={`opp-${match.id}`} className={`transition-colors ${match.prediction?.expectedValue && match.prediction.expectedValue > 0.05 ? 'bg-green-50/30 dark:bg-green-900/10 hover:bg-green-50 dark:hover:bg-green-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-750'}`}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                       <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white font-bold text-sm">
-                         {index + 1}
-                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap overflow-hidden text-ellipsis">
-                      <div className="text-sm font-bold text-gray-900 dark:text-white truncate max-w-[200px]">
-                        {match.homeTeamId} <span className="text-xs text-gray-400 font-normal mx-1">vs</span> {match.awayTeamId}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-0.5">{match.league}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap" suppressHydrationWarning>
-                      <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{formatKickoff(match.kickoffTime).date}</div>
-                      <div className="text-xs text-blue-500 font-semibold mt-0.5">{formatKickoff(match.kickoffTime).time}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                       <div className="text-sm font-mono font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded inline-block">
-                         {match.odds?.draw ? match.odds.draw.toFixed(2) : '-'}
-                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
-                       <div className="flex items-center justify-center space-x-2">
-                         <span className="font-mono font-bold text-blue-600 dark:text-blue-400" title="DrawLab Adjusted Model Probability">
-                           {match.prediction?.adjustedDrawProbability ? `${(match.prediction.adjustedDrawProbability * 100).toFixed(1)}%` : '-'}
-                         </span>
-                         <span className="text-gray-400 text-xs">vs</span>
-                         <span className="font-mono text-gray-500 dark:text-gray-400" title="Bookmaker Implied Probability">
-                           {match.prediction?.impliedProbability ? `${(match.prediction.impliedProbability * 100).toFixed(1)}%` : '-'}
-                         </span>
-                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                       <div className={`flex flex-col items-center ${getValueColor(match.prediction?.valueRating)}`}>
-                         <span className="font-mono font-bold text-sm">
-                           {match.prediction?.expectedValue !== undefined ? `${match.prediction.expectedValue > 0 ? '+' : ''}${(match.prediction.expectedValue * 100).toFixed(1)}%` : '-'}
-                         </span>
-                         <span className="text-[10px] uppercase font-semibold mt-0.5">
-                           {match.prediction?.valueRating || 'No value'}
-                         </span>
-                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <div className="flex flex-col items-center">
-                        <span className="text-lg font-black text-gray-900 dark:text-white">{(match.prediction?.opportunityScore || 0).toFixed(1)}</span>
-                        <div className={`mt-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-full border ${getCategoryColor(match.prediction?.opportunityCategory)}`}>
-                          {match.prediction?.opportunityCategory || 'Low'}
+                {topOpportunities.length > 0 ? (
+                  topOpportunities.map((match, index) => (
+                    <tr key={`opp-${match.id}`} className={`transition-colors ${match.prediction?.expectedValue && match.prediction.expectedValue > 0.05 ? 'bg-green-50/30 dark:bg-green-900/10 hover:bg-green-50 dark:hover:bg-green-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-750'}`}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                         <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white font-bold text-sm">
+                           {index + 1}
+                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap overflow-hidden text-ellipsis">
+                        <div className="text-sm font-bold text-gray-900 dark:text-white truncate max-w-[200px]">
+                          {match.homeTeamId} <span className="text-xs text-gray-400 font-normal mx-1">vs</span> {match.awayTeamId}
                         </div>
+                        <div className="text-xs text-gray-500 mt-0.5">{match.league}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap" suppressHydrationWarning>
+                        <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{formatKickoff(match.kickoffTime).date}</div>
+                        <div className="text-xs text-blue-500 font-semibold mt-0.5">{formatKickoff(match.kickoffTime).time}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                         <div className="text-sm font-mono font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded inline-block">
+                           {match.odds?.draw ? match.odds.draw.toFixed(2) : '-'}
+                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
+                         <div className="flex items-center justify-center space-x-2">
+                           <span className="font-mono font-bold text-blue-600 dark:text-blue-400" title="DrawLab Adjusted Model Probability">
+                             {match.prediction?.adjustedDrawProbability ? `${(match.prediction.adjustedDrawProbability * 100).toFixed(1)}%` : '-'}
+                           </span>
+                           <span className="text-gray-400 text-xs">vs</span>
+                           <span className="font-mono text-gray-500 dark:text-gray-400" title="Bookmaker Implied Probability">
+                             {match.prediction?.impliedProbability ? `${(match.prediction.impliedProbability * 100).toFixed(1)}%` : '-'}
+                           </span>
+                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                         <div className={`flex flex-col items-center ${getValueColor(match.prediction?.valueRating)}`}>
+                           <span className="font-mono font-bold text-sm">
+                             {match.prediction?.expectedValue !== undefined ? `${match.prediction.expectedValue > 0 ? '+' : ''}${(match.prediction.expectedValue * 100).toFixed(1)}%` : '-'}
+                           </span>
+                           <span className="text-[10px] uppercase font-semibold mt-0.5">
+                             {match.prediction?.valueRating || 'No value'}
+                           </span>
+                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <div className="flex flex-col items-center">
+                          <span className="text-lg font-black text-gray-900 dark:text-white">{(match.prediction?.opportunityScore || 0).toFixed(1)}</span>
+                          <div className={`mt-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-full border ${getCategoryColor(match.prediction?.opportunityCategory)}`}>
+                            {match.prediction?.opportunityCategory || 'Low'}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <Link href={`/match-analysis?id=${match.id}`} className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">Analyze</Link>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={8} className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center justify-center">
+                        <svg className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">International Break</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto mt-1">
+                          No major league fixtures (EPL, La Liga, etc.) found for this week. Regular service resumes on March 28th.
+                        </p>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Link href={`/match-analysis?id=${match.id}`} className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">Analyze</Link>
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
@@ -233,43 +249,51 @@ export default function DashboardPage() {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {matches.map((match) => (
-                <tr key={match.id} className="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="font-medium text-gray-900 dark:text-white">
-                      {match.homeTeamId} vs {match.awayTeamId}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {match.league}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap" suppressHydrationWarning>
-                    <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{formatKickoff(match.kickoffTime).date}</div>
-                    <div className="text-xs text-blue-500 font-semibold mt-0.5">{formatKickoff(match.kickoffTime).time}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500 dark:text-gray-400 font-mono">
-                    {match.prediction ? `${(match.prediction.drawProbability * 100).toFixed(1)}%` : 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
-                      {match.prediction?.adjustedDrawProbability ? `${(match.prediction.adjustedDrawProbability * 100).toFixed(1)}%` : 'N/A'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center justify-center gap-2">
-                       <span className="font-bold text-gray-900 dark:text-white">{(match.prediction?.confidenceScore || 0).toFixed(1)}</span>
-                       <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                         <div className="bg-green-500 h-2 rounded-full" style={{ width: `${(match.prediction?.confidenceScore || 0) * 10}%` }}></div>
-                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <Link href={`/match-analysis?id=${match.id}`} className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
-                      Analyze
-                    </Link>
+              {matches.length > 0 ? (
+                matches.map((match) => (
+                  <tr key={match.id} className="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="font-medium text-gray-900 dark:text-white">
+                        {match.homeTeamId} vs {match.awayTeamId}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      {match.league}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap" suppressHydrationWarning>
+                      <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{formatKickoff(match.kickoffTime).date}</div>
+                      <div className="text-xs text-blue-500 font-semibold mt-0.5">{formatKickoff(match.kickoffTime).time}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500 dark:text-gray-400 font-mono">
+                      {match.prediction ? `${(match.prediction.drawProbability * 100).toFixed(1)}%` : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                        {match.prediction?.adjustedDrawProbability ? `${(match.prediction.adjustedDrawProbability * 100).toFixed(1)}%` : 'N/A'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center justify-center gap-2">
+                         <span className="font-bold text-gray-900 dark:text-white">{(match.prediction?.confidenceScore || 0).toFixed(1)}</span>
+                         <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                           <div className="bg-green-500 h-2 rounded-full" style={{ width: `${(match.prediction?.confidenceScore || 0) * 10}%` }}></div>
+                         </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <Link href={`/match-analysis?id=${match.id}`} className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                        Analyze
+                      </Link>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500 italic">
+                    Database is current but no fixtures matched criteria.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
