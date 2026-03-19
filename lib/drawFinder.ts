@@ -14,10 +14,10 @@ export function calculateOpportunityScore(
   
   let rawScore = ((adjustedDrawProbability * 100) * 0.6) + (confidenceScore * 4);
   
-  // Phase 6 Integration: Boost opportunity heavily if positive Value Bet detected
+  // Phase 6 Integration: Boost opportunity if positive Value Bet detected
   if (expectedValue !== undefined && expectedValue > 0) {
-    // A 10% EV (+0.1) adds a massive +20 to the raw pre-normalized score 
-    rawScore += (expectedValue * 200); 
+    // A 10% EV (+0.1) adds 5 raw points — meaningful boost without dominating the score
+    rawScore += (expectedValue * 50);
   }
 
   const normalizedScore = Number((rawScore / 10).toFixed(1));
