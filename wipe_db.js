@@ -1,21 +1,20 @@
-const { PrismaClient } = require('@prisma/client');
-const dotenv = require('dotenv');
-
-dotenv.config({ path: '.env' });
-dotenv.config({ path: '.env.local' });
-
-const prisma = new PrismaClient();
+import { prisma } from './lib/prisma';
 
 async function wipe() {
-  console.log('🗑️  Wiping all match data...');
+  console.log('--- Wiping Match and Prediction tables ---');
   try {
-    const p = await prisma.prediction.deleteMany({});
-    const m = await prisma.match.deleteMany({});
-    console.log(`✅ Deleted ${p.count} predictions and ${m.count} matches.`);
-  } catch (e) {
-    console.error('❌ Wipe failed:', e.message);
+    const deletedPredictions = await prisma.prediction.deleteMany({});
+    console.log(`Deleted ${deletedPredictions.count} predictions.`);
+    
+    const deletedMatches = await prisma.match.deleteMany({});
+    console.log(`Deleted ${deletedMatches.count} matches.`);
+    
+    console.log('--- Wipe complete ---');
+  } catch (error) {
+    console.error('Error during wipe:', error);
   } finally {
     await prisma.$disconnect();
   }
 }
+
 wipe();
