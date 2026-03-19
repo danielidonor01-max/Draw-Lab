@@ -174,13 +174,13 @@ function MatchAnalysisContent() {
           </div>
 
           {/* Draw Indicators */}
-          <IndicatorPanel indicators={prediction.indicators} />
+          <IndicatorPanel indicators={Array.isArray(prediction.indicators) ? prediction.indicators : []} />
           
           {/* H2H History Placeholder */}
           <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-8">
             <h3 className="text-lg font-bold mb-4">Head-to-Head History</h3>
             <div className="space-y-3">
-               {matchData.headToHead.map((h2h, idx) => (
+               {(matchData.headToHead ?? []).map((h2h, idx) => (
                  <div key={`h2h-${idx}`} className="flex justify-between items-center text-sm p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
                    <span className="font-semibold">{h2h.homeTeamScore} - {h2h.awayTeamScore}</span>
                    <span className="text-xs text-gray-500" suppressHydrationWarning>{new Date(h2h.date).toLocaleDateString()}</span>

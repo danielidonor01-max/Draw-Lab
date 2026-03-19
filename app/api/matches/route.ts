@@ -19,11 +19,15 @@ export async function GET() {
     const enrichedMatches = dbMatches.map((dbMatch) => {
       const match = {
         id: dbMatch.id,
+        // Use the correct DB field names that the frontend components expect
+        homeTeamId: dbMatch.homeTeamId,
+        awayTeamId: dbMatch.awayTeamId,
         league: dbMatch.league,
         season: dbMatch.season || '2023',
-        homeTeam: "Home Team", // Simplified for mapping; usually stored
-        awayTeam: "Away Team",
-        kickoff: dbMatch.kickoffTime.toISOString(),
+        kickoffTime: dbMatch.kickoffTime.toISOString(),
+        status: (dbMatch.status as 'SCHEDULED' | 'IN_PLAY' | 'FINISHED') || 'SCHEDULED',
+        homeScore: dbMatch.homeScore ?? undefined,
+        awayScore: dbMatch.awayScore ?? undefined,
         homeTeamStats: dbMatch.homeTeamStats as any,
         awayTeamStats: dbMatch.awayTeamStats as any,
         homeForm: dbMatch.homeForm as any,
@@ -31,36 +35,43 @@ export async function GET() {
         headToHead: dbMatch.headToHead as any,
         leagueAverages: dbMatch.leagueAverages as any,
         odds: dbMatch.odds as any,
+        // Top-level drawProbability for the Match interface
+        drawProbability: dbMatch.prediction?.drawProbability ?? undefined,
       };
 
       const pred = dbMatch.prediction;
-      
-      return {
-        ...match,
-        drawProbability: pred?.drawProbability || 0,
-        adjustedDrawProbability: pred?.adjustedDrawProbability || 0,
-        confidenceScore: pred?.confidenceScore || 0,
-        opportunityScore: pred?.opportunityScore || 0,
-        opportunityCategory: pred?.opportunityCategory || 'Low',
-        
-        homeWinProbability: pred?.homeWinProbability || 0,
-        awayWinProbability: pred?.awayWinProbability || 0,
-        expectedGoalsHome: pred?.expectedGoalsHome || 0,
-        expectedGoalsAway: pred?.expectedGoalsAway || 0,
-        scoreMatrix: pred?.scoreProbabilities as any,
-        indicators: pred?.indicators as any,
-        indicatorDetails: pred?.indicatorDetails as any,
-        
-        impliedProbability: pred?.impliedProbability || 0,
-        expectedValue: pred?.expectedValue || 0,
-        valueRating: pred?.valueRating || 'No value'
-      };
+
+      // Nest prediction fields into a proper prediction object so rankMatches() can filter/sort
+      const prediction = pred ? {
+        matchId: pred.matchId,
+        homeWinProbability: pred.homeWinProbability,
+        awayWinProbability: pred.awayWinProbability,
+        drawProbability: pred.drawProbability,
+        adjustedDrawProbability: pred.adjustedDrawProbability ?? undefined,
+        expectedGoalsHome: pred.expectedGoalsHome,
+        expectedGoalsAway: pred.expectedGoalsAway,
+        scoreProbabilities: pred.scoreProbabilities as any,
+        indicators: (pred.indicators as string[]) ?? [],
+        indicatorDetails: pred.indicatorDetails as any,
+        confidenceScore: pred.confidenceScore,
+        opportunityScore: pred.opportunityScore ?? undefined,
+        opportunityCategory: (pred.opportunityCategory as 'Very High' | 'High' | 'Moderate' | 'Low') ?? undefined,
+        impliedProbability: pred.impliedProbability ?? undefined,
+        expectedValue: pred.expectedValue ?? undefined,
+        valueRating: (pred.valueRating as 'Strong value' | 'Good value' | 'Small value' | 'No value') ?? undefined,
+      } : undefined;
+
+      return { ...match, prediction };
     });
-    
-    // Sort all arrays by opportunity rank so client receives default best items
+
+    // Sort by opportunity score descending (only matches that have predictions with a score)
     const rankedMatches = rankMatches(enrichedMatches as any, enrichedMatches.length);
-    
-    return NextResponse.json({ success: true, count: rankedMatches.length, data: rankedMatches });
+
+    // Append matches that have no opportunityScore after the ranked ones
+    const unranked = enrichedMatches.filter(m => m.prediction?.opportunityScore === undefined);
+    const allMatches = [...rankedMatches, ...unranked];
+
+    return NextResponse.json({ success: true, count: allMatches.length, data: allMatches });
   } catch (error) {
     console.error('Failed to fetch upcoming matches from Database:', error);
     return NextResponse.json({ success: false, error: 'Failed to read matches from Database.' }, { status: 500 });
