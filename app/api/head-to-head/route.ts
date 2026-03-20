@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { FootballDataService } from '../../../services/footballDataService';
+import { FootballDataService } from '@/services/footballDataService';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

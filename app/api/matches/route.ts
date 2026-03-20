@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
-import { prisma } from '../../../lib/prisma';
-import { rankMatches } from '../../../lib/drawFinder';
+import { prisma } from '@/lib/prisma';
+import { rankMatches } from '@/lib/drawFinder';
 
 export async function GET() {
   try {
